@@ -1,0 +1,17 @@
+{
+    "type": "package",
+    "name": "dullbananas/elm-touch",
+    "summary": "Handle touch movement and gestures",
+    "license": "MIT",
+    "version": "1.0.0",
+    "exposed-modules": [
+        "Touch"
+    ],
+    "elm-version": "0.19.0 <= v < 0.20.0",
+    "dependencies": {
+        "elm/core": "1.0.0 <= v < 2.0.0",
+        "elm/html": "1.0.0 <= v < 2.0.0",
+        "mpizenberg/elm-pointer-events": "4.0.2 <= v < 5.0.0"
+    },
+    "test-dependencies": {}
+}
