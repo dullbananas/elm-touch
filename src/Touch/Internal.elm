@@ -49,7 +49,7 @@ update msg oldModel updater =
     case msg of
         Event { touches } ->
             let
-              --model : Model msg
+--              model : Model msg
                 model =
                     { oldModel
                     | previousTouches = oldModel.currentTouches
