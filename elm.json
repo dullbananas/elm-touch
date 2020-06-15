@@ -3,7 +3,7 @@
     "name": "dullbananas/elm-touch",
     "summary": "Handle touch movement and gestures",
     "license": "MIT",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "exposed-modules": [
         "Touch"
     ],
