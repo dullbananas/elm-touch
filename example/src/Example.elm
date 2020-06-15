@@ -29,6 +29,7 @@ type alias Model =
     { touchModel : Touch.Model Msg
     , x : Float
     , y : Float
+    , pinch : Float
     }
 
 
@@ -37,9 +38,11 @@ initModel =
     { touchModel =
         Touch.initModel
             [ Touch.onMove { fingers = 2 } MovedTwoFingers
+            , Touch.onPinch Pinched
             ]
     , x = 0
     , y = 0
+    , pinch = 0
     }
 
 
@@ -50,6 +53,7 @@ initModel =
 type Msg
     = TouchMsg Touch.Msg
     | MovedTwoFingers Float Float
+    | Pinched Float
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -65,6 +69,11 @@ update msg model =
                 ( { model | x = model.x + x, y = model.y + y }
                 , Cmd.none
                 )
+
+        Pinched amount ->
+            ( { model | pinch = model.pinch + amount }
+            , Cmd.none
+            )
 
 
 
@@ -84,4 +93,5 @@ view model =
 
         , p [] [ text <| "x: " ++ String.fromFloat model.x ]
         , p [] [ text <| "y: " ++ String.fromFloat model.y ]
+        , p [] [ text <| "pinch distance: " ++ String.fromFloat model.pinch ]
         ]

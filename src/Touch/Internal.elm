@@ -42,6 +42,7 @@ type Msg
 
 type Listener msg
     = OnMove { fingers : Int } ( Float -> Float -> msg )
+    | OnPinch ( Float -> msg )
 
 
 update : Msg -> Model msg -> ( Model msg -> model ) -> ( model, Cmd msg )
@@ -74,26 +75,27 @@ update msg oldModel updater =
 -- Decide what message a listener will receive when an event occurs
 triggerListener : Model msg -> Listener msg -> msg
 triggerListener model listener =
+    let
+        touchPositions : List { previous : Point, current : Point }
+        touchPositions =
+            Dict.map
+                ( \id currentPoint ->
+                    case Dict.get id model.previousTouches of
+                        Nothing ->
+                            Nothing
+
+                        Just previousPoint ->
+                            Just
+                                { previous = previousPoint
+                                , current = currentPoint
+                                }
+                ) model.currentTouches
+                |> Dict.values
+                |> List.filterMap identity
+    in
     case listener of
         OnMove { fingers } createMsg ->
             let
-                touchPositions : List { previous : Point, current : Point }
-                touchPositions =
-                    Dict.map
-                        ( \id currentPoint ->
-                            case Dict.get id model.previousTouches of
-                                Nothing ->
-                                    Nothing
-
-                                Just previousPoint ->
-                                    Just
-                                        { previous = previousPoint
-                                        , current = currentPoint
-                                        }
-                        ) model.currentTouches
-                        |> Dict.values
-                        |> List.filterMap identity
-
                 touchDeltas : List Point
                 touchDeltas =
                     List.map
@@ -113,10 +115,41 @@ triggerListener model listener =
                 then createMsg averageDelta.x averageDelta.y
                 else createMsg 0 0
 
+        OnPinch createMsg ->
+            case touchPositions of
+                [ point1, point2 ] ->
+                    let
+                        previousDistance : Float
+                        previousDistance =
+                            calcDistance point1.previous point2.previous
+
+                        currentDistance : Float
+                        currentDistance =
+                            calcDistance point1.current point2.current
+
+                        delta : Float
+                        delta =
+                            currentDistance - previousDistance
+                    in
+                        createMsg delta
+
+                _ ->
+                    createMsg 0
+
 
 average : List Float -> Float
 average nums =
     List.sum nums / toFloat ( List.length nums )
+
+
+calcDistance : Point -> Point -> Float
+calcDistance a b =
+    -- https://github.com/justgook/alt-linear-algebra/blob/2.0.0/src/AltMath/Vector2.elm#L117
+    let
+        c =
+            { x = a.x - b.x, y = a.y - b.y }
+    in
+    sqrt (c.x * c.x + c.y * c.y)
 
 
 triggerMsgs : List msg -> Cmd msg

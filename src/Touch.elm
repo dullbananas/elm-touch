@@ -7,6 +7,7 @@ module Touch exposing
 
     , Listener
     , onMove
+    , onPinch
     )
 
 {-| This module exposes an API for handling touch events.
@@ -103,3 +104,11 @@ so they are higher when the fingers are moving faster and 0 when they don't move
 onMove : { fingers : Int } -> ( Float -> Float -> msg ) -> Listener msg
 onMove =
     Internal.OnMove
+
+
+{-| Triggers when two fingers move apart. A negative value occurs when the
+fingers come closer together.
+-}
+onPinch : ( Float -> msg ) -> Listener msg
+onPinch =
+    Internal.OnPinch
