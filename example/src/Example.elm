@@ -5,6 +5,7 @@ import Html exposing (..)
 import Html.Attributes exposing (..)
 import Browser
 import Touch
+import Time
 
 
 
@@ -17,7 +18,9 @@ main =
         { init = always ( initModel, Cmd.none )
         , update = update
         , view = view
-        , subscriptions = always Sub.none
+        , subscriptions = always <| Sub.batch
+            [ Time.every 1000 ( always UpdateFps )
+            ]
         }
 
 
@@ -31,6 +34,8 @@ type alias Model =
     , y : Float
     , pinch : Float
     , radians : Float
+    , fps : Int
+    , nextFps : Int
     }
 
 
@@ -46,6 +51,8 @@ initModel =
     , y = 0
     , pinch = 0
     , radians = 0
+    , fps = 0
+    , nextFps = 0
     }
 
 
@@ -55,9 +62,17 @@ initModel =
 
 type Msg
     = TouchMsg Touch.Msg
+
     | MovedTwoFingers Float Float
     | Pinched Float
     | Rotated Float
+
+    | UpdateFps
+
+
+updateFps : Model -> Model
+updateFps model =
+    { model | nextFps = model.nextFps + 1 }
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -70,17 +85,22 @@ update msg model =
                 ( \newTouchModel -> { model | touchModel = newTouchModel } )
 
         MovedTwoFingers x y ->
-            ( { model | x = model.x + x, y = model.y + y }
+            ( { model | x = model.x + x, y = model.y + y } |> updateFps
             , Cmd.none
             )
 
         Pinched amount ->
-            ( { model | pinch = model.pinch + amount |> clamp 0 (1/0) }
+            ( { model | pinch = model.pinch + amount |> clamp 0 (1/0) } |> updateFps
             , Cmd.none
             )
 
         Rotated amount ->
-            ( { model | radians = model.radians + amount }
+            ( { model | radians = model.radians + amount } |> updateFps
+            , Cmd.none
+            )
+
+        UpdateFps ->
+            ( { model | fps = model.nextFps, nextFps = 0 }
             , Cmd.none
             )
 
@@ -104,6 +124,7 @@ view model =
         , p [] [ text <| "y: " ++ String.fromFloat model.y ]
         , p [] [ text <| "pinch distance: " ++ String.fromFloat model.pinch ]
         , p [] [ text <| "radians: " ++ String.fromFloat model.radians ]
+        , p [] [ text <| "updates per second: " ++ String.fromInt model.fps ]
 
         , div
             [ style "background" "#0088ff"
