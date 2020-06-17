@@ -165,10 +165,6 @@ triggerListener model listener =
 
                             Nothing ->
                                 Nothing
-                        {-Maybe.map2 min
-                            ( delta )
-                            ( Maybe.map2 (-) (Just<|pi*2) delta )
-                            |> Maybe.map createMsg-}
 
                 _ ->
                     Nothing
@@ -193,25 +189,10 @@ calcAngle : Point -> Point -> Maybe Float
 calcAngle a b =
     -- from elm-geometry
     let
-        x =
-            b.x - a.x
-
-        y =
-            b.y - a.y
-
         v =
-            {-if x < 0 then
-                { x = -x, y = -y }
-            else-}
-                { x = x, y = y }
-            --if b.x > a.x then
-                {-{ x = b.x - a.x
-                , y = b.y - a.y
-                }-}
-            {-else
-                { x = a.x - b.x
-                , y = a.y - b.y
-                }-}
+            { x = b.x - a.x
+            , y = b.y - a.y
+            }
 
         largestComponent =
             max (abs v.x) (abs v.y)
@@ -235,17 +216,10 @@ calcAngle a b =
                     ( scaledY / scaledLength )
                     ( scaledX / scaledLength )
         in
-        --Just angle
         Just <| if angle >= 0 then
             angle
         else
             angle + pi*2
-
-        {-Just <|
-            Types.Direction2d
-                { x = scaledX / scaledLength
-                , y = scaledY / scaledLength
-                }-}
 
 
 triggerMsgs : List msg -> Cmd msg

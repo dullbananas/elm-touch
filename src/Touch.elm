@@ -31,7 +31,7 @@ Coordinates (returned by some listeners) start at the top left:
     ▼
 
 # Listeners
-@docs Listener, onMove, onPinch
+@docs Listener, onMove, onPinch, onRotate
 -}
 
 import Html exposing (Html)
@@ -131,6 +131,7 @@ onPinch =
 
 
 {-| Triggered when two fingers rotate. This uses standard Elm angles (radians).
+One full turn is `pi * 2`.
 -}
 onRotate : ( Float -> msg ) -> Listener msg
 onRotate =

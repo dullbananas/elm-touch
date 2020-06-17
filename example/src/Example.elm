@@ -81,7 +81,6 @@ update msg model =
 
         Rotated amount ->
             ( { model | radians = model.radians + amount }
-            --( { model | radians = amount }
             , Cmd.none
             )
 
