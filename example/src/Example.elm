@@ -116,8 +116,10 @@ view model =
             , style "top" <|
                 String.fromFloat model.y ++ "px"
             , style "transform" <|
-                "rotate(" ++ String.fromFloat model.radians ++ "rad)"
-            , style "outline" <|
-                String.fromFloat (model.pinch/2) ++ "px solid #0088ff"
+                let
+                    scale = String.fromFloat <| 1 + model.pinch/50
+                in
+                "rotate(" ++ String.fromFloat model.radians ++ "rad) "
+                ++ "scale(" ++ scale ++ "," ++ scale ++ ")"
             ] []
         ]
