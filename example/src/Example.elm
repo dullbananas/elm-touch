@@ -30,6 +30,7 @@ type alias Model =
     , x : Float
     , y : Float
     , pinch : Float
+    , radians : Float
     }
 
 
@@ -39,10 +40,12 @@ initModel =
         Touch.initModel
             [ Touch.onMove { fingers = 2 } MovedTwoFingers
             , Touch.onPinch Pinched
+            , Touch.onRotate Rotated
             ]
     , x = 0
     , y = 0
     , pinch = 0
+    , radians = 0
     }
 
 
@@ -54,6 +57,7 @@ type Msg
     = TouchMsg Touch.Msg
     | MovedTwoFingers Float Float
     | Pinched Float
+    | Rotated Float
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -66,12 +70,18 @@ update msg model =
                 ( \newTouchModel -> { model | touchModel = newTouchModel } )
 
         MovedTwoFingers x y ->
-                ( { model | x = model.x + x, y = model.y + y }
-                , Cmd.none
-                )
+            ( { model | x = model.x + x, y = model.y + y }
+            , Cmd.none
+            )
 
         Pinched amount ->
             ( { model | pinch = model.pinch + amount }
+            , Cmd.none
+            )
+
+        Rotated amount ->
+            ( { model | radians = model.radians + amount }
+            --( { model | radians = amount }
             , Cmd.none
             )
 
@@ -94,4 +104,5 @@ view model =
         , p [] [ text <| "x: " ++ String.fromFloat model.x ]
         , p [] [ text <| "y: " ++ String.fromFloat model.y ]
         , p [] [ text <| "pinch distance: " ++ String.fromFloat model.pinch ]
+        , p [] [ text <| "radians: " ++ String.fromFloat model.radians ]
         ]

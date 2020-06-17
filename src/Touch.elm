@@ -8,6 +8,7 @@ module Touch exposing
     , Listener
     , onMove
     , onPinch
+    , onRotate
     )
 
 {-| This module exposes an API for handling touch events.
@@ -17,7 +18,7 @@ module Touch exposing
 
 # Coordinates
 
-Coordinates start at the top left:
+Coordinates (returned by some listeners) start at the top left:
 
     ┏━━━━━━━━━━━━━━━━━▶
     ┃(0,0) (1,0) (2,0)
@@ -55,7 +56,8 @@ type Model msg
     = Model ( Internal.Model msg )
 
 
-{-| Listeners are like subscriptions but for touch events.
+{-| Listeners are like subscriptions but for touch events. They are triggered
+by finger movement.
 -}
 type alias Listener msg =
     Internal.Listener msg
@@ -126,3 +128,10 @@ fingers come closer together.
 onPinch : ( Float -> msg ) -> Listener msg
 onPinch =
     Internal.OnPinch
+
+
+{-| Triggered when two fingers rotate. This uses standard Elm angles (radians).
+-}
+onRotate : ( Float -> msg ) -> Listener msg
+onRotate =
+    Internal.OnRotate

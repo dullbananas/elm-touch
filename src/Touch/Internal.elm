@@ -43,6 +43,7 @@ type Msg
 type Listener msg
     = OnMove { fingers : Int } ( Float -> Float -> msg )
     | OnPinch ( Float -> msg )
+    | OnRotate ( Float -> msg )
 
 
 update : Msg -> Model msg -> ( Model msg -> model ) -> ( model, Cmd msg )
@@ -69,11 +70,11 @@ update msg oldModel updater =
             Tuple.pair
                 ( updater model )
                 <| triggerMsgs <|
-                    List.map ( triggerListener model ) model.listeners
+                    List.filterMap ( triggerListener model ) model.listeners
 
 
 -- Decide what message a listener will receive when an event occurs
-triggerListener : Model msg -> Listener msg -> msg
+triggerListener : Model msg -> Listener msg -> Maybe msg
 triggerListener model listener =
     let
         touchPositions : List { previous : Point, current : Point }
@@ -112,8 +113,8 @@ triggerListener model listener =
                     }
             in
             if fingers == List.length touchDeltas
-                then createMsg averageDelta.x averageDelta.y
-                else createMsg 0 0
+                then Just <| createMsg averageDelta.x averageDelta.y
+                else Nothing
 
         OnPinch createMsg ->
             case touchPositions of
@@ -131,10 +132,46 @@ triggerListener model listener =
                         delta =
                             currentDistance - previousDistance
                     in
-                        createMsg delta
+                        Just <| createMsg delta
 
                 _ ->
-                    createMsg 0
+                    Nothing
+
+        OnRotate createMsg ->
+            case touchPositions of
+                [ point1, point2 ] ->
+                    let
+                        previousAngle : Maybe Float
+                        previousAngle =
+                            calcAngle point1.previous point2.previous
+
+                        currentAngle : Maybe Float
+                        currentAngle =
+                            calcAngle point1.current point2.current
+
+                        maybeDelta : Maybe Float
+                        maybeDelta =
+                            Maybe.map2 (-) currentAngle previousAngle
+                    in
+                        case maybeDelta of
+                            Just delta ->
+                                Just <| createMsg <|
+                                    if abs delta < pi
+                                        then
+                                            delta
+                                        else
+                                            -- prevent prob caused by angle going from pi*2 stright to 0
+                                            pi*2 - abs delta
+
+                            Nothing ->
+                                Nothing
+                        {-Maybe.map2 min
+                            ( delta )
+                            ( Maybe.map2 (-) (Just<|pi*2) delta )
+                            |> Maybe.map createMsg-}
+
+                _ ->
+                    Nothing
 
 
 average : List Float -> Float
@@ -150,6 +187,65 @@ calcDistance a b =
             { x = a.x - b.x, y = a.y - b.y }
     in
     sqrt (c.x * c.x + c.y * c.y)
+
+
+calcAngle : Point -> Point -> Maybe Float
+calcAngle a b =
+    -- from elm-geometry
+    let
+        x =
+            b.x - a.x
+
+        y =
+            b.y - a.y
+
+        v =
+            {-if x < 0 then
+                { x = -x, y = -y }
+            else-}
+                { x = x, y = y }
+            --if b.x > a.x then
+                {-{ x = b.x - a.x
+                , y = b.y - a.y
+                }-}
+            {-else
+                { x = a.x - b.x
+                , y = a.y - b.y
+                }-}
+
+        largestComponent =
+            max (abs v.x) (abs v.y)
+    in
+    if largestComponent == 0 then
+        Nothing
+
+    else
+        let
+            scaledX =
+                v.x / largestComponent
+
+            scaledY =
+                v.y / largestComponent
+
+            scaledLength =
+                sqrt (scaledX * scaledX + scaledY * scaledY)
+
+            angle =
+                atan2
+                    ( scaledY / scaledLength )
+                    ( scaledX / scaledLength )
+        in
+        --Just angle
+        Just <| if angle >= 0 then
+            angle
+        else
+            angle + pi*2
+
+        {-Just <|
+            Types.Direction2d
+                { x = scaledX / scaledLength
+                , y = scaledY / scaledLength
+                }-}
 
 
 triggerMsgs : List msg -> Cmd msg
