@@ -75,7 +75,7 @@ update msg model =
             )
 
         Pinched amount ->
-            ( { model | pinch = model.pinch + amount }
+            ( { model | pinch = model.pinch + amount |> clamp 0 (1/0) }
             , Cmd.none
             )
 
@@ -104,4 +104,20 @@ view model =
         , p [] [ text <| "y: " ++ String.fromFloat model.y ]
         , p [] [ text <| "pinch distance: " ++ String.fromFloat model.pinch ]
         , p [] [ text <| "radians: " ++ String.fromFloat model.radians ]
+
+        , div
+            [ style "background" "#0088ff"
+            , style "position" "relative"
+            , style "width" "50px"
+            , style "height" "50px"
+
+            , style "left" <|
+                String.fromFloat model.x ++ "px"
+            , style "top" <|
+                String.fromFloat model.y ++ "px"
+            , style "transform" <|
+                "rotate(" ++ String.fromFloat model.radians ++ "rad)"
+            , style "outline" <|
+                String.fromFloat (model.pinch/2) ++ "px solid #0088ff"
+            ] []
         ]
