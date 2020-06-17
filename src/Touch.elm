@@ -59,8 +59,8 @@ type Model msg
 {-| Listeners are like subscriptions but for touch events. They are triggered
 by finger movement.
 -}
-type alias Listener msg =
-    Internal.Listener msg
+type Listener msg
+    = Listener ( Internal.ListenerConfig msg )
 
 
 
@@ -72,7 +72,7 @@ listeners.
 -}
 initModel : List ( Listener msg ) -> Model msg
 initModel =
-    Internal.initModel >> Model
+    List.map (\(Listener a) -> a) >> Internal.initModel >> Model
 
 
 {-| This is used to update `Touch.Model` in response to a `Touch.Msg`. It also
@@ -118,8 +118,8 @@ X and Y distances (in pixels) and return a `msg`. The X and Y values are deltas,
 so they are higher when the fingers are moving faster and 0 when they don't move.
 -}
 onMove : { fingers : Int } -> ( Float -> Float -> msg ) -> Listener msg
-onMove =
-    Internal.OnMove
+onMove a =
+    initListener << Internal.OnMove a
 
 
 {-| Triggers when two fingers move apart. A negative value occurs when the
@@ -127,7 +127,7 @@ fingers come closer together.
 -}
 onPinch : ( Float -> msg ) -> Listener msg
 onPinch =
-    Internal.OnPinch
+    initListener << Internal.OnPinch
 
 
 {-| Triggered when two fingers rotate. This uses standard Elm angles (radians).
@@ -135,4 +135,11 @@ One full turn is `pi * 2`.
 -}
 onRotate : ( Float -> msg ) -> Listener msg
 onRotate =
-    Internal.OnRotate
+    initListener << Internal.OnRotate
+
+
+initListener : Internal.Listener msg -> Listener msg
+initListener listener =
+    Listener
+        { listener = listener
+        }

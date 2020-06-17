@@ -24,11 +24,11 @@ type alias Point =
 type alias Model msg =
     { currentTouches : Dict Int Point
     , previousTouches : Dict Int Point
-    , listeners : List ( Listener msg )
+    , listeners : List ( ListenerConfig msg )
     }
 
 
-initModel : List ( Listener msg ) -> Model msg
+initModel : List ( ListenerConfig msg ) -> Model msg
 initModel listeners =
     { currentTouches = Dict.empty
     , previousTouches = Dict.empty
@@ -38,6 +38,11 @@ initModel listeners =
 
 type Msg
     = Event T.Event
+
+
+type alias ListenerConfig msg =
+    { listener : Listener msg
+    }
 
 
 type Listener msg
@@ -74,8 +79,8 @@ update msg oldModel updater =
 
 
 -- Decide what message a listener will receive when an event occurs
-triggerListener : Model msg -> Listener msg -> Maybe msg
-triggerListener model listener =
+triggerListener : Model msg -> ListenerConfig msg -> Maybe msg
+triggerListener model config =
     let
         touchPositions : List { previous : Point, current : Point }
         touchPositions =
@@ -94,7 +99,7 @@ triggerListener model listener =
                 |> Dict.values
                 |> List.filterMap identity
     in
-    case listener of
+    case config.listener of
         OnMove { fingers } createMsg ->
             let
                 touchDeltas : List Point
