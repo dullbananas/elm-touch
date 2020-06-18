@@ -4,7 +4,7 @@ import Html.Events.Extra.Touch as T
 import Dict exposing (Dict)
 import Html
 import Task exposing (Task)
-import Math.Vector2 as Vec2
+import Math.Vector2 as Vec2 exposing (Vec2, vec2)
 
 
 attrs : List ( Html.Attribute Msg )
@@ -16,15 +16,9 @@ attrs =
     ]
 
 
-type alias Point =
-    { x : Float
-    , y : Float
-    }
-
-
 type alias Model msg =
-    { currentTouches : Dict Int Point
-    , previousTouches : Dict Int Point
+    { currentTouches : Dict Int Vec2
+    , previousTouches : Dict Int Vec2
     , listeners : List ( ListenerConfig msg )
     }
 
@@ -64,11 +58,11 @@ update msg oldModel updater =
                     , currentTouches =
                         List.map
                             ( \{ identifier, clientPos } ->
-                                Tuple.pair
-                                    identifier
-                                    { x = Tuple.first clientPos
-                                    , y = Tuple.second clientPos
-                                    }
+                                case clientPos of
+                                    ( clientX, clientY ) ->
+                                        Tuple.pair
+                                            identifier
+                                            ( vec2 clientX clientY )
                             ) touches
                             |> Dict.fromList
                     }
@@ -83,7 +77,7 @@ update msg oldModel updater =
 triggerListener : Model msg -> ListenerConfig msg -> Maybe msg
 triggerListener model config =
     let
-        touchPositions : List { previous : Point, current : Point }
+        touchPositions : List { previous : Vec2, current : Vec2 }
         touchPositions =
             Dict.map
                 ( \id currentPoint ->
@@ -103,23 +97,26 @@ triggerListener model config =
     case config.listener of
         OnMove { fingers } createMsg ->
             let
-                touchDeltas : List Point
+                touchDeltas : List Vec2
                 touchDeltas =
                     List.map
                         ( \{ previous, current } ->
-                            { x = current.x - previous.x
+                            {-{ x = current.x - previous.x
                             , y = current.y - previous.y
-                            }
+                            }-}
+                            Vec2.sub current previous
                         ) touchPositions
 
-                averageDelta : Point
+                averageDelta : { x : Float, y : Float }
                 averageDelta =
-                    { x = average <| List.map .x touchDeltas
-                    , y = average <| List.map .y touchDeltas
+                    { x = average <| List.map Vec2.getX touchDeltas
+                    , y = average <| List.map Vec2.getY touchDeltas
                     }
             in
             if fingers == List.length touchDeltas
-                then Just <| createMsg averageDelta.x averageDelta.y
+                then Just <| createMsg
+                    ( averageDelta.x )
+                    ( averageDelta.y )
                 else Nothing
 
         OnPinch createMsg ->
@@ -128,11 +125,11 @@ triggerListener model config =
                     let
                         previousDistance : Float
                         previousDistance =
-                            calcDistance point1.previous point2.previous
+                            Vec2.distance point1.previous point2.previous
 
                         currentDistance : Float
                         currentDistance =
-                            calcDistance point1.current point2.current
+                            Vec2.distance point1.current point2.current
 
                         delta : Float
                         delta =
@@ -184,11 +181,11 @@ average nums =
     List.sum nums / toFloat ( List.length nums )
 
 
-calcDistance : Point -> Point -> Float
+{-calcDistance : Point -> Point -> Float
 calcDistance a b =
     Vec2.distance
         ( Vec2.fromRecord a )
-        ( Vec2.fromRecord b )
+        ( Vec2.fromRecord b )-}
     -- https://github.com/justgook/alt-linear-algebra/blob/2.0.0/src/AltMath/Vector2.elm#L117
     {-let
         x = a.x - b.x
@@ -197,10 +194,13 @@ calcDistance a b =
     sqrt (x*x + y*y)-}
 
 
-calcAngle : Point -> Point -> Maybe Float
-calcAngle a b =
+calcAngle : Vec2 -> Vec2 -> Maybe Float
+calcAngle a_ b_ =
     -- from elm-geometry
     let
+        a = Vec2.toRecord a_
+        b = Vec2.toRecord b_
+
         v =
             { x = b.x - a.x
             , y = b.y - a.y

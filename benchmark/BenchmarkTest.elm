@@ -6,6 +6,9 @@ import Benchmark.Runner as Runner
 import Touch
 import Touch.Internal
 
+import Math.Vector2 exposing (vec2)
+
+
 
 main : Runner.BenchmarkProgram
 main =
@@ -65,8 +68,8 @@ suite =
     describe "Touch"
         [ benchmark "calcAngle" <| \_ ->
             Touch.Internal.calcAngle
-                { x = -24, y = 98 }
-                { x = 90, y = -42 }
+                ( vec2 -24 98 )
+                ( vec2 90 -42 )
 
         , benchmark "onPinch" <| \_ ->
             update <| Touch.Internal.OnPinch <| \_ -> ()
