@@ -4,6 +4,7 @@ import Html.Events.Extra.Touch as T
 import Dict exposing (Dict)
 import Html
 import Task exposing (Task)
+import Math.Vector2 as Vec2
 
 
 attrs : List ( Html.Attribute Msg )
@@ -185,12 +186,15 @@ average nums =
 
 calcDistance : Point -> Point -> Float
 calcDistance a b =
+    Vec2.distance
+        ( Vec2.fromRecord a )
+        ( Vec2.fromRecord b )
     -- https://github.com/justgook/alt-linear-algebra/blob/2.0.0/src/AltMath/Vector2.elm#L117
-    let
+    {-let
         x = a.x - b.x
         y = a.y - b.y
     in
-    sqrt (x*x + y*y)
+    sqrt (x*x + y*y)-}
 
 
 calcAngle : Point -> Point -> Maybe Float
