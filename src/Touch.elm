@@ -36,6 +36,7 @@ Coordinates (returned by some listeners) start at the top left:
 
 import Html exposing (Html)
 import Html.Attributes as Attr
+import Html.Lazy
 import Touch.Internal as Internal
 
 
@@ -97,7 +98,12 @@ update ( Msg msg ) ( Model model ) updater =
 must be a function that converts a `Touch.Msg` to `msg`.
 -}
 element : List ( Html.Attribute msg ) -> ( Msg -> msg ) -> Html msg
-element customAttrs msgWrapper =
+element =
+    Html.Lazy.lazy2 el
+
+
+el : List ( Html.Attribute msg ) -> ( Msg -> msg ) -> Html msg
+el customAttrs msgWrapper =
     let
 --      attrs : List (Html.Attribute msg)
         attrs =

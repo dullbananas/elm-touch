@@ -160,13 +160,16 @@ triggerListener model config =
                     in
                         case maybeDelta of
                             Just delta ->
+                                let
+                                    absDelta = abs delta
+                                in
                                 Just <| createMsg <|
-                                    if abs delta < pi
+                                    if absDelta < pi
                                         then
                                             delta
                                         else
                                             -- prevent prob caused by angle going from pi*2 stright to 0
-                                            pi*2 - abs delta
+                                            pi*2 - absDelta
 
                             Nothing ->
                                 Nothing
@@ -184,10 +187,10 @@ calcDistance : Point -> Point -> Float
 calcDistance a b =
     -- https://github.com/justgook/alt-linear-algebra/blob/2.0.0/src/AltMath/Vector2.elm#L117
     let
-        c =
-            { x = a.x - b.x, y = a.y - b.y }
+        x = a.x - b.x
+        y = a.y - b.y
     in
-    sqrt (c.x * c.x + c.y * c.y)
+    sqrt (x*x + y*y)
 
 
 calcAngle : Point -> Point -> Maybe Float
