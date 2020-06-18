@@ -195,43 +195,48 @@ calcDistance a b =
 
 
 calcAngle : Vec2 -> Vec2 -> Maybe Float
-calcAngle a_ b_ =
+calcAngle a b =
     -- from elm-geometry
     let
-        a = Vec2.toRecord a_
-        b = Vec2.toRecord b_
-
         v =
-            { x = b.x - a.x
+            {-{ x = b.x - a.x
             , y = b.y - a.y
-            }
+            }-}
+            Vec2.sub b a
+                --|> Vec2.toRecord
 
         largestComponent =
-            max (abs v.x) (abs v.y)
+            --max (abs v.x) (abs v.y)
+            max
+                ( abs <| Vec2.getX v )
+                ( abs <| Vec2.getY v )
     in
-    if largestComponent == 0 then
-        Nothing
+    if largestComponent == 0
+        then
+            Nothing
 
-    else
-        let
-            scaledX =
+        else
+            let
+            {-scaledX =
                 v.x / largestComponent
 
             scaledY =
                 v.y / largestComponent
 
             scaledLength =
-                sqrt (scaledX * scaledX + scaledY * scaledY)
+                sqrt (scaledX * scaledX + scaledY * scaledY)-}
+                direction =
+                    Vec2.normalize v
 
-            angle =
-                atan2
-                    ( scaledY / scaledLength )
-                    ( scaledX / scaledLength )
-        in
-        Just <| if angle >= 0 then
-            angle
-        else
-            angle + pi*2
+                angle =
+                    atan2
+                        ( Vec2.getY direction )
+                        ( Vec2.getX direction )
+            in
+            Just <| if angle >= 0 then
+                angle
+            else
+                angle + pi*2
 
 
 triggerMsgs : List msg -> Cmd msg
