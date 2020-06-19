@@ -17,7 +17,7 @@ main =
 
 model : Touch.Internal.Model ()
 model =
-    Touch.Internal.initModel []
+    Touch.Internal.initModel [] []
 
 
 event touches =

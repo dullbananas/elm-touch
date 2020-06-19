@@ -15,7 +15,7 @@ import Time
 main : Program () Model Msg
 main =
     Browser.element
-        { init = always ( initModel, Cmd.none )
+        { init = always ( initModel, Touch.initCmd TouchMsg )
         , update = update
         , view = view
         , subscriptions = always <| Sub.batch
@@ -36,6 +36,8 @@ type alias Model =
     , radians : Float
     , fps : Int
     , nextFps : Int
+    , vx : Float
+    , vy : Float
     }
 
 
@@ -47,12 +49,16 @@ initModel =
             , Touch.onPinch Pinched
             , Touch.onRotate Rotated
             ]
+            [ Touch.getEndVelocity GotFinalVelocity
+            ]
     , x = 0
     , y = 0
     , pinch = 0
     , radians = 0
     , fps = 0
     , nextFps = 0
+    , vx = 0
+    , vy = 0
     }
 
 
@@ -66,6 +72,7 @@ type Msg
     | MovedTwoFingers Float Float
     | Pinched Float
     | Rotated Float
+    | GotFinalVelocity Float Float
 
     | UpdateFps
 
@@ -99,6 +106,11 @@ update msg model =
             , Cmd.none
             )
 
+        GotFinalVelocity x y ->
+            ( { model | vx = x, vy = y }
+            , Cmd.none
+            )
+
         UpdateFps ->
             ( { model | fps = model.nextFps, nextFps = 0 }
             , Cmd.none
@@ -125,6 +137,8 @@ view model =
         , p [] [ text <| "pinch distance: " ++ String.fromFloat model.pinch ]
         , p [] [ text <| "radians: " ++ String.fromFloat model.radians ]
         , p [] [ text <| "updates per second: " ++ String.fromInt model.fps ]
+        , p [] [ text <| "velocity x: " ++ String.fromFloat model.vx ]
+        , p [] [ text <| "velocity y: " ++ String.fromFloat model.vy ]
 
         , div
             [ style "background" "#0088ff"

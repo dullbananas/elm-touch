@@ -3,12 +3,16 @@ module Touch exposing
     , Msg
     , Model
     , initModel
+    , initCmd
     , update
 
     , Listener
     , onMove
     , onPinch
     , onRotate
+
+    , Getter
+    , getEndVelocity
     )
 
 {-| This module exposes an API for handling touch events.
@@ -32,6 +36,9 @@ Coordinates (returned by some listeners) start at the top left:
 
 # Listeners
 @docs Listener, onMove, onPinch, onRotate
+
+# Getters
+@docs Getter, getEndVelocity
 -}
 
 import Html exposing (Html)
@@ -64,6 +71,13 @@ type Listener msg
     = Listener ( Internal.ListenerConfig msg )
 
 
+{-| This is also like a subscription but is triggerd at the start or end of a
+touch event.
+-}
+type Getter msg
+    = Getter ( Internal.Getter msg )
+
+
 
 -- Setup
 
@@ -71,9 +85,20 @@ type Listener msg
 {-| Use this to initialize the state of `Touch.Model` and to specify the
 listeners.
 -}
-initModel : List ( Listener msg ) -> Model msg
-initModel =
-    List.map (\(Listener a) -> a) >> Internal.initModel >> Model
+initModel : List ( Listener msg ) -> List ( Getter msg ) -> Model msg
+initModel listeners getters =
+    Model <| Internal.initModel
+        ( List.map (\(Listener a) -> a) listeners )
+        ( List.map (\(Getter a) -> a) getters )
+    --List.map (\(Listener a) -> a) >> Internal.initModel >> Model
+
+
+{-| An initial `Cmd msg` that has to be run. Use it like this:
+-}
+initCmd : ( Msg -> msg ) -> Cmd msg
+initCmd tag =
+    Internal.initCmd
+        |> Cmd.map ( Msg >> tag )
 
 
 {-| This is used to update `Touch.Model` in response to a `Touch.Msg`. It also
@@ -149,3 +174,19 @@ initListener listener =
     Listener
         { listener = listener
         }
+
+
+
+-- Getters
+
+
+{-| Gets the final velocity vector of the touch movement.
+-}
+getEndVelocity : ( Float -> Float -> msg ) -> Getter msg
+getEndVelocity =
+    initGetter << Internal.GetEndVelocity
+
+
+initGetter : Internal.Getter msg -> Getter msg
+initGetter =
+    Getter

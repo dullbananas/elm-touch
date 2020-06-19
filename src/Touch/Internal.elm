@@ -6,6 +6,7 @@ import Dict exposing (Dict)
 import Html
 import Task exposing (Task)
 import Math.Vector2 as Vec2 exposing (Vec2, vec2)
+import Time
 
 
 pi2 : Float
@@ -15,8 +16,16 @@ pi2 =
 
 attrs : List ( Html.Attribute Msg )
 attrs =
-    [ Html.Events.custom
-        "touchmove"
+    [ eventAttr "touchmove" Moved
+    , eventAttr "touchstart" Started
+    , eventAttr "touchend" Ended
+    ]
+
+
+eventAttr : String -> ( TouchEvent -> Msg ) -> Html.Attribute Msg
+eventAttr name tag =
+    Html.Events.custom
+        name
         ( touchEventDecoder
             |> Decode.andThen
                 ( \event ->
@@ -27,7 +36,6 @@ attrs =
                         }
                 )
         )
-    ]
 
 
 type alias TouchEvent =
@@ -75,19 +83,41 @@ type alias Model msg =
     { currentTouches : Dict Int Vec2
     , previousTouches : Dict Int Vec2
     , listeners : List ( ListenerConfig msg )
+    , getters : List ( Getter msg )
+    , currentMillis : Int
     }
 
 
-initModel : List ( ListenerConfig msg ) -> Model msg
-initModel listeners =
+initModel : List ( ListenerConfig msg ) -> List ( Getter msg ) -> Model msg
+initModel listeners getters =
     { currentTouches = Dict.empty
     , previousTouches = Dict.empty
     , listeners = listeners
+    , getters = getters
+    , currentMillis = 0
+    , previousMillis = 0
     }
 
 
+initCmd : Cmd Msg
+initCmd =
+    Cmd.batch
+        [ getTime
+        ]
+
+
+getTime : Cmd Msg
+getTime =
+    Time.now
+        |> Task.map Time.posixToMillis
+        |> Task.perform GotTime
+
+
 type Msg
-    = Moved TouchEvent
+    = GotTime Int
+    | Started TouchEvent
+    | Moved TouchEvent
+    | Ended TouchEnded
 
 
 type alias ListenerConfig msg =
@@ -101,9 +131,21 @@ type Listener msg
     | OnRotate ( Float -> msg )
 
 
+type Getter msg
+    = GetEndVelocity ( Float -> Float -> msg )
+
+
 update : Msg -> Model msg -> ( Model msg -> model ) -> ( model, Cmd msg )
 update msg oldModel updater =
-    case msg of
+    ( case msg of
+        GotTime millis ->
+            ( { oldModel
+              | currentMillis = millis
+              , previousMillis = oldModel.currentMillis
+              }
+            , Cmd.none
+            )
+
         Moved { touches } ->
             let
 --              model : Model msg
@@ -118,10 +160,26 @@ update msg oldModel updater =
                             |> Dict.fromList
                     }
             in
-            Tuple.pair
+            {-Tuple.pair
                 ( updater model )
                 <| triggerMsgs <|
-                    List.filterMap ( triggerListener model ) model.listeners
+                    List.filterMap ( triggerListener model ) model.listeners-}
+            ( model
+            , Cmd.batch
+                [ List.filterMap (triggerListener model) model.listeners
+                    |> triggerMsgs
+                , getTime
+                ]
+            )
+
+        Started _ ->
+            ( oldModel
+            , Cmd.batch
+                [ getTime
+                ]
+            )
+    )
+        |> Tuple.mapFirst updater
 
 
 getTouchPositions : Model msg -> List { previous : Vec2, current : Vec2 }
