@@ -21,20 +21,6 @@ model =
 
 
 event touches =
-    {-{ keys =
-        { alt = False, ctrl = False, shift = False }
-    , changedTouches = []
-    , targetTouches = []
-    , touches =
-        List.map
-            ( \( id, x, y ) ->
-                { identifier = id
-                , clientPos = ( x, y )
-                , pagePos = ( x, y )
-                , screenPos = ( x, y )
-                }
-            ) touches
-    }-}
     { touches =
         List.map
             ( \( id, x, y ) ->

@@ -27,12 +27,6 @@ attrs =
                         }
                 )
         )
-        {-( Decode.value
-            |> Decode.andThen
-                (\v -> Decode.succeed<| always {message=Moved{touches=[]},stopPropagation=False,preventDefault=False}
-                    ( Debug.log "error" <| Decode.decodeValue touchEventDecoder v )
-                )
-        )-}
     ]
 
 
@@ -119,11 +113,6 @@ update msg oldModel updater =
                     , currentTouches =
                         List.map
                             ( \{ identifier, clientPos } ->
-                                {-case clientPos of
-                                    ( clientX, clientY ) ->
-                                        Tuple.pair
-                                            identifier
-                                            ( vec2 clientX clientY )-}
                                 ( identifier, clientPos )
                             ) touches
                             |> Dict.fromList
@@ -165,16 +154,8 @@ triggerListener model config =
                 touchDeltas =
                     List.map
                         ( \{ previous, current } ->
-                            {-{ x = current.x - previous.x
-                            , y = current.y - previous.y
-                            }-}
                             Vec2.sub current previous
                         ) touchPositions
-                {-averageDelta : { x : Float, y : Float }
-                averageDelta =
-                    { x = average <| List.map Vec2.getX touchDeltas
-                    , y = average <| List.map Vec2.getY touchDeltas
-                    }-}
             in
             if fingers == List.length touchDeltas
                 then
@@ -248,44 +229,14 @@ triggerListener model config =
                     Nothing
 
 
-{-average : List Float -> Float
-average nums =
-    List.sum nums / toFloat ( List.length nums )-}
-
-
 calcAngle : Vec2 -> Vec2 -> Float
 calcAngle a b =
-    -- from elm-geometry
     let
-        --v =
-            {-{ x = b.x - a.x
-            , y = b.y - a.y
-            }-}
-            --Vec2.sub b a
-                --|> Vec2.toRecord
-
-        {-largestComponent =
-            --max (abs v.x) (abs v.y)
-            max
-                ( abs <| Vec2.getX v )
-                ( abs <| Vec2.getY v )-}
-            {-scaledX =
-                v.x / largestComponent
-
-            scaledY =
-                v.y / largestComponent
-
-            scaledLength =
-                sqrt (scaledX * scaledX + scaledY * scaledY)-}
         direction =
-            --Vec2.normalize v
             Vec2.direction a b
-                --|> Vec2.toRecord
 
         angle =
             atan2
-                --( direction.y )
-                --( direction.x )
                 ( Vec2.getY direction )
                 ( Vec2.getX direction )
     in
