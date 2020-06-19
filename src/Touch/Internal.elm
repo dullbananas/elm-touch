@@ -7,12 +7,14 @@ import Task exposing (Task)
 import Math.Vector2 as Vec2 exposing (Vec2, vec2)
 
 
+pi2 : Float
+pi2 =
+    pi * 2
+
+
 attrs : List ( Html.Attribute Msg )
 attrs =
-    [ T.onStart Event
-    , T.onMove Event
-    , T.onEnd Event
-    , T.onCancel Event
+    [ T.onMove Moved
     ]
 
 
@@ -32,7 +34,7 @@ initModel listeners =
 
 
 type Msg
-    = Event T.Event
+    = Moved T.Event
 
 
 type alias ListenerConfig msg =
@@ -49,7 +51,7 @@ type Listener msg
 update : Msg -> Model msg -> ( Model msg -> model ) -> ( model, Cmd msg )
 update msg oldModel updater =
     case msg of
-        Event { touches } ->
+        Moved { touches } ->
             let
 --              model : Model msg
                 model =
@@ -73,26 +75,28 @@ update msg oldModel updater =
                     List.filterMap ( triggerListener model ) model.listeners
 
 
+getTouchPositions : Model msg -> List { previous : Vec2, current : Vec2 }
+getTouchPositions model =
+    Dict.foldr
+        ( \key value list ->
+            case Dict.get key model.previousTouches of
+                Nothing ->
+                    list
+
+                Just previous ->
+                    { previous = previous
+                    , current = value
+                    } :: list
+        ) [] model.currentTouches
+
+
 -- Decide what message a listener will receive when an event occurs
 triggerListener : Model msg -> ListenerConfig msg -> Maybe msg
 triggerListener model config =
     let
         touchPositions : List { previous : Vec2, current : Vec2 }
         touchPositions =
-            Dict.map
-                ( \id currentPoint ->
-                    case Dict.get id model.previousTouches of
-                        Nothing ->
-                            Nothing
-
-                        Just previousPoint ->
-                            Just
-                                { previous = previousPoint
-                                , current = currentPoint
-                                }
-                ) model.currentTouches
-                |> Dict.values
-                |> List.filterMap identity
+            getTouchPositions model
     in
     case config.listener of
         OnMove { fingers } createMsg ->
@@ -106,18 +110,30 @@ triggerListener model config =
                             }-}
                             Vec2.sub current previous
                         ) touchPositions
-
-                averageDelta : { x : Float, y : Float }
+                {-averageDelta : { x : Float, y : Float }
                 averageDelta =
                     { x = average <| List.map Vec2.getX touchDeltas
                     , y = average <| List.map Vec2.getY touchDeltas
-                    }
+                    }-}
             in
             if fingers == List.length touchDeltas
-                then Just <| createMsg
-                    ( averageDelta.x )
-                    ( averageDelta.y )
-                else Nothing
+                then
+                    let
+                        averageDelta : { x : Float, y : Float }
+                        averageDelta =
+                            List.foldr
+                                Vec2.add
+                                ( vec2 0 0 )
+                                touchDeltas
+                                |> Vec2.scale ( 1 / toFloat fingers )
+                                |> Vec2.toRecord
+                    in
+                    Just <| createMsg
+                        ( averageDelta.x )
+                        ( averageDelta.y )
+
+                else
+                    Nothing
 
         OnPinch createMsg ->
             case touchPositions of
@@ -144,79 +160,55 @@ triggerListener model config =
             case touchPositions of
                 [ point1, point2 ] ->
                     let
-                        previousAngle : Maybe Float
+                        previousAngle : Float
                         previousAngle =
                             calcAngle point1.previous point2.previous
 
-                        currentAngle : Maybe Float
+                        currentAngle : Float
                         currentAngle =
                             calcAngle point1.current point2.current
 
-                        maybeDelta : Maybe Float
-                        maybeDelta =
-                            Maybe.map2 (-) currentAngle previousAngle
-                    in
-                        case maybeDelta of
-                            Just delta ->
-                                let
-                                    absDelta = abs delta
-                                in
-                                Just <| createMsg <|
-                                    if absDelta < pi
-                                        then
-                                            delta
-                                        else
-                                            -- prevent prob caused by angle going from pi*2 stright to 0
-                                            pi*2 - absDelta
+                        delta : Float
+                        delta =
+                            currentAngle - previousAngle
 
-                            Nothing ->
-                                Nothing
+                        absDelta : Float
+                        absDelta =
+                            abs delta
+                    in
+                        Just <| createMsg <|
+                            if absDelta < pi
+                                then
+                                    delta
+                                else
+                                    -- prevent prob caused by angle going from pi*2 stright to 0
+                                    pi2 - absDelta
 
                 _ ->
                     Nothing
 
 
-average : List Float -> Float
+{-average : List Float -> Float
 average nums =
-    List.sum nums / toFloat ( List.length nums )
+    List.sum nums / toFloat ( List.length nums )-}
 
 
-{-calcDistance : Point -> Point -> Float
-calcDistance a b =
-    Vec2.distance
-        ( Vec2.fromRecord a )
-        ( Vec2.fromRecord b )-}
-    -- https://github.com/justgook/alt-linear-algebra/blob/2.0.0/src/AltMath/Vector2.elm#L117
-    {-let
-        x = a.x - b.x
-        y = a.y - b.y
-    in
-    sqrt (x*x + y*y)-}
-
-
-calcAngle : Vec2 -> Vec2 -> Maybe Float
+calcAngle : Vec2 -> Vec2 -> Float
 calcAngle a b =
     -- from elm-geometry
     let
-        v =
+        --v =
             {-{ x = b.x - a.x
             , y = b.y - a.y
             }-}
-            Vec2.sub b a
+            --Vec2.sub b a
                 --|> Vec2.toRecord
 
-        largestComponent =
+        {-largestComponent =
             --max (abs v.x) (abs v.y)
             max
                 ( abs <| Vec2.getX v )
-                ( abs <| Vec2.getY v )
-    in
-    if largestComponent == 0
-        then
-            Nothing
-
-        else
-            let
+                ( abs <| Vec2.getY v )-}
             {-scaledX =
                 v.x / largestComponent
 
@@ -225,22 +217,28 @@ calcAngle a b =
 
             scaledLength =
                 sqrt (scaledX * scaledX + scaledY * scaledY)-}
-                direction =
-                    Vec2.normalize v
+        direction =
+            --Vec2.normalize v
+            Vec2.direction a b
+                --|> Vec2.toRecord
 
-                angle =
-                    atan2
-                        ( Vec2.getY direction )
-                        ( Vec2.getX direction )
-            in
-            Just <| if angle >= 0 then
-                angle
-            else
-                angle + pi*2
+        angle =
+            atan2
+                --( direction.y )
+                --( direction.x )
+                ( Vec2.getY direction )
+                ( Vec2.getX direction )
+    in
+    if angle >= 0 then
+        angle
+    else
+        angle + pi2
 
 
 triggerMsgs : List msg -> Cmd msg
 triggerMsgs =
     List.map
-        ( \msg -> Task.succeed msg |> Task.attempt (always msg) )
+        ( \msg -> Task.succeed ()
+            |> Task.attempt (always msg)
+        )
         >> Cmd.batch

@@ -35,7 +35,7 @@ event touches =
                 }
             ) touches
     }
-        |> Touch.Internal.Event
+        |> Touch.Internal.Moved
 
 
 update : Touch.Internal.Listener () -> Touch.Internal.Model ()
@@ -65,11 +65,23 @@ update listener =
 
 suite : Benchmark
 suite =
+    let
+        dummyModel =
+            update <| Touch.Internal.OnRotate <| \_ -> ()
+    in
     describe "Touch"
         [ benchmark "calcAngle" <| \_ ->
             Touch.Internal.calcAngle
                 ( vec2 -24 98 )
                 ( vec2 90 -42 )
+
+        , benchmark "triggerMsgs" <| \_ ->
+            Touch.Internal.triggerMsgs
+                [ 9, 4, 7, 100, 1, 56 ]
+
+        , benchmark "getTouchPositions" <| \_ ->
+            dummyModel
+                |> Touch.Internal.getTouchPositions
 
         , benchmark "onPinch" <| \_ ->
             update <| Touch.Internal.OnPinch <| \_ -> ()
