@@ -21,7 +21,7 @@ model =
 
 
 event touches =
-    { keys =
+    {-{ keys =
         { alt = False, ctrl = False, shift = False }
     , changedTouches = []
     , targetTouches = []
@@ -32,6 +32,14 @@ event touches =
                 , clientPos = ( x, y )
                 , pagePos = ( x, y )
                 , screenPos = ( x, y )
+                }
+            ) touches
+    }-}
+    { touches =
+        List.map
+            ( \( id, x, y ) ->
+                { clientPos = vec2 x y
+                , identifier = id
                 }
             ) touches
     }

@@ -1,6 +1,7 @@
 module Touch.Internal exposing (..)
 
-import Html.Events.Extra.Touch as T
+import Html.Events
+import Json.Decode as Decode exposing (Decoder)
 import Dict exposing (Dict)
 import Html
 import Task exposing (Task)
@@ -14,8 +15,66 @@ pi2 =
 
 attrs : List ( Html.Attribute Msg )
 attrs =
-    [ T.onMove Moved
+    [ Html.Events.custom
+        "touchmove"
+        ( touchEventDecoder
+            |> Decode.andThen
+                ( \event ->
+                    Decode.succeed
+                        { message = Moved event
+                        , stopPropagation = True
+                        , preventDefault = True
+                        }
+                )
+        )
+        {-( Decode.value
+            |> Decode.andThen
+                (\v -> Decode.succeed<| always {message=Moved{touches=[]},stopPropagation=False,preventDefault=False}
+                    ( Debug.log "error" <| Decode.decodeValue touchEventDecoder v )
+                )
+        )-}
     ]
+
+
+type alias TouchEvent =
+    { touches : List Touch
+    }
+
+
+type alias Touch =
+    { identifier : Int
+    , clientPos : Vec2
+    }
+
+
+touchEventDecoder : Decoder TouchEvent
+touchEventDecoder =
+    Decode.map TouchEvent
+        ( Decode.field "touches" <| touchListDecoder touchDecoder )
+
+
+touchDecoder : Decoder Touch
+touchDecoder =
+    Decode.map2 Touch
+        ( Decode.field "identifier" Decode.int )
+        ( Decode.map2 vec2
+            ( Decode.field "clientX" Decode.float )
+            ( Decode.field "clientY" Decode.float )
+        )
+
+
+touchListDecoder : Decoder a -> Decoder ( List a )
+touchListDecoder itemDecoder =
+    Decode.field "length" Decode.int
+        |> Decode.andThen
+            ( \length ->
+                List.range (0) (length - 1)
+                    |> List.map
+                        ( \i -> Decode.field (String.fromInt i) itemDecoder )
+                    |> List.foldr
+                        ( Decode.map2 (::) )
+                        ( Decode.succeed [] )
+            )
 
 
 type alias Model msg =
@@ -34,7 +93,7 @@ initModel listeners =
 
 
 type Msg
-    = Moved T.Event
+    = Moved TouchEvent
 
 
 type alias ListenerConfig msg =
@@ -60,11 +119,12 @@ update msg oldModel updater =
                     , currentTouches =
                         List.map
                             ( \{ identifier, clientPos } ->
-                                case clientPos of
+                                {-case clientPos of
                                     ( clientX, clientY ) ->
                                         Tuple.pair
                                             identifier
-                                            ( vec2 clientX clientY )
+                                            ( vec2 clientX clientY )-}
+                                ( identifier, clientPos )
                             ) touches
                             |> Dict.fromList
                     }
