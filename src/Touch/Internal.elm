@@ -22,7 +22,7 @@ attrs =
     ]
 
 
-eventAttr : String -> ( TouchEvent -> Msg ) -> Html.Attribute Msg
+eventAttr : String -> ( TouchEvent -> Msg ) -> Html.Attribute Msg
 eventAttr name tag =
     Html.Events.custom
         name
@@ -39,11 +39,11 @@ eventAttr name tag =
 
 
 type alias TouchEvent =
-    { touches : List Touch
+    { touches : List TouchObject
     }
 
 
-type alias Touch =
+type alias TouchObject =
     { identifier : Int
     , clientPos : Vec2
     }
@@ -55,9 +55,9 @@ touchEventDecoder =
         ( Decode.field "touches" <| touchListDecoder touchDecoder )
 
 
-touchDecoder : Decoder Touch
+touchDecoder : Decoder TouchObject
 touchDecoder =
-    Decode.map2 Touch
+    Decode.map2 TouchObject
         ( Decode.field "identifier" Decode.int )
         ( Decode.map2 vec2
             ( Decode.field "clientX" Decode.float )
@@ -80,44 +80,31 @@ touchListDecoder itemDecoder =
 
 
 type alias Model msg =
-    { currentTouches : Dict Int Vec2
-    , previousTouches : Dict Int Vec2
+    { currentTouches : Dict Int ( List Touch )
+    , previousTouches : Dict Int ( List Touch )
     , listeners : List ( ListenerConfig msg )
-    , getters : List ( Getter msg )
-    , currentMillis : Int
     }
 
 
-initModel : List ( ListenerConfig msg ) -> List ( Getter msg ) -> Model msg
-initModel listeners getters =
+type alias Touch =
+    { position : Vec2
+    , time : Time.Posix
+    }
+
+
+initModel : List ( ListenerConfig msg ) -> Model msg
+initModel listeners =
     { currentTouches = Dict.empty
     , previousTouches = Dict.empty
     , listeners = listeners
-    , getters = getters
-    , currentMillis = 0
-    , previousMillis = 0
     }
 
 
-initCmd : Cmd Msg
-initCmd =
-    Cmd.batch
-        [ getTime
-        ]
-
-
-getTime : Cmd Msg
-getTime =
-    Time.now
-        |> Task.map Time.posixToMillis
-        |> Task.perform GotTime
-
-
 type Msg
-    = GotTime Int
+    = NewTouches
     | Started TouchEvent
     | Moved TouchEvent
-    | Ended TouchEnded
+    | Ended TouchEvent
 
 
 type alias ListenerConfig msg =
@@ -129,10 +116,6 @@ type Listener msg
     = OnMove { fingers : Int } ( Float -> Float -> msg )
     | OnPinch ( Float -> msg )
     | OnRotate ( Float -> msg )
-
-
-type Getter msg
-    = GetEndVelocity ( Float -> Float -> msg )
 
 
 update : Msg -> Model msg -> ( Model msg -> model ) -> ( model, Cmd msg )
