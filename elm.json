@@ -2,7 +2,7 @@
     "type": "package",
     "name": "dullbananas/elm-touch",
     "summary": "Handle touch movement and gestures",
-    "license": "MIT",
+    "license": "GPL-3.0",
     "version": "1.2.0",
     "exposed-modules": [
         "Touch"
